@@ -7,7 +7,7 @@ author: Martin Alexandre
 last edited: May 2013
 """
 
-import sys,os
+import os
 
 
 #Gui

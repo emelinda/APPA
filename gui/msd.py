@@ -7,9 +7,6 @@ author: Martin Alexandre
 last edited: May 2013
 """
 
-import sys,os,time,commands
-import string, math
-
 #GUI 
 import gui.graph as Graph
 import gui.conv  as Conv

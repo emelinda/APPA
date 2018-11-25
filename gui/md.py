@@ -7,8 +7,7 @@ author: Martin Alexandre
 last edited: january 2014
 """
 
-import sys,os,re
-import threading
+import sys
 
 #GUI 
 import gui.graph  as Graph

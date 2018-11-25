@@ -7,8 +7,6 @@ author: Martin Alexandre
 last edited: May 2013
 """
 
-import sys,os
-import string
 from PyQt4 import Qt,QtGui,QtCore
 
 

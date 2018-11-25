@@ -7,9 +7,6 @@ author: Martin Alexandre
 last edited: May 2013
 """
 
-import sys,os
-import string, math
-
 #gui
 import gui.graph as Graph
 
@@ -19,6 +16,7 @@ try:
     from PyQt4 import Qt,QtGui,QtCore
 except:
     pass
+
 from numpy import sqrt,zeros,conjugate,arange,linspace,exp,log,sin
 
 

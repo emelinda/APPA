@@ -7,7 +7,6 @@ author: Martin Alexandre
 last edited: May 2013
 """
 
-import sys,os,re
 from PyQt4 import Qt,QtGui,QtCore
 from numpy import linspace
 

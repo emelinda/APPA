@@ -6,10 +6,6 @@ Abinit Post Process Application
 author: Martin Alexandre
 last edited: May 2013
 """
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
-
-import sys,os,re
 
 #gui
 import button as Button

@@ -7,9 +7,6 @@ author: Martin Alexandre
 last edited: May 2013
 """
 
-import os, sys, time
-import string, math, re
-
 try:
     from PyQt4 import Qt,QtGui,QtCore
 except:

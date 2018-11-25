@@ -9,10 +9,9 @@ last edited: May 2014
 
 #GUI 
 import gui.graph as Graph
-import gui.conv  as Conv
 
 #Utility
-import utility.write as Write
+
 import utility.positions as Atom
 import utility.analysis as Analysis
 

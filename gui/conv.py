@@ -7,12 +7,10 @@ author: Martin Alexandre
 last edited: May 2013
 """
 
-import sys,os
-import string, math
-from PyQt4 import Qt,QtGui,QtCore
+from PyQt5 import Qt, QtGui, QtCore, QtWidgets
 from numpy import pi
 
-class Conversion(QtGui.QWidget):
+class Conversion(QtWidgets.QWidget):
 	
     def __init__(self, parent = None):
 	    	
@@ -32,79 +30,79 @@ class Conversion(QtGui.QWidget):
     def initUI(self, parent):
 	    
 	#-----------------Creation of the windows----------------------------#
-        QtGui.QWidget.__init__(self, parent)
+        QtWidgets.QWidget.__init__(self, parent)
         self.setWindowTitle('Units')
         self.setFixedSize(260, 250)
         self.center()
 	
-        self.layout = QtGui.QGridLayout()
+        self.layout = QtWidgets.QGridLayout()
         self.setLayout(self.layout)
 	
 	
-        self.pbapply = QtGui.QPushButton("apply")
+        self.pbapply = QtWidgets.QPushButton("apply")
         self.pbapply.setFixedSize(70,20)
         self.pbapply.setEnabled(False)
         self.connect(self.pbapply,QtCore.SIGNAL("clicked()"),self.apply)
         
-        self.pbcancel = QtGui.QPushButton("cancel")
+        self.pbcancel = QtWidgets.QPushButton("cancel")
         self.pbcancel.setFixedSize(70,20)
         self.connect(self.pbcancel,QtCore.SIGNAL("clicked()"),self.cancel)
         
-        self.pbok = QtGui.QPushButton("ok")
+        self.pbok = QtWidgets.QPushButton("ok")
         self.pbok.setFixedSize(70,20)
         self.connect(self.pbok,QtCore.SIGNAL("clicked()"),self.ok)
         
-        self.lble     = QtGui.QLabel('energy :')
+        self.lble     = QtWidgets.QLabel('energy :')
         self.lble.setFixedSize(100,20)
         
-        self.lblDistance  = QtGui.QLabel('Distance :')
+        self.lblDistance  = QtWidgets.QLabel('Distance :')
         self.lblDistance.setFixedSize(100,20)
         
-        self.lblvol   = QtGui.QLabel('Volume :')
+        self.lblvol   = QtWidgets.QLabel('Volume :')
         self.lblvol.setFixedSize(100,20)
 	
-        self.lblpress = QtGui.QLabel('Pressure :')
+        self.lblpress = QtWidgets.QLabel('Pressure :')
         self.lblpress.setFixedSize(100,20)
 	
-        self.lbltemp  = QtGui.QLabel('Temperature :')
+        self.lbltemp  = QtWidgets.QLabel('Temperature :')
         self.lbltemp.setFixedSize(100,20)
 
-        self.lblangle  = QtGui.QLabel('Angle :')
+        self.lblangle  = QtWidgets.QLabel('Angle :')
         self.lblangle.setFixedSize(100,20)
 
 	
-        self.CBoxe = QtGui.QComboBox()
+        self.CBoxe = QtWidgets.QComboBox()
         self.CBoxe.addItem("Ha")
         self.CBoxe.addItem("eV")
         self.connect(self.CBoxe,QtCore.SIGNAL('currentIndexChanged(const QString&)'),self.boxChange)
         self.CBoxe.setFixedSize(100,20)
 	
-        self.CBoxvol = QtGui.QComboBox()
+        self.CBoxvol = QtWidgets.QComboBox()
         self.CBoxvol.addItem("Bohr^3")
         self.CBoxvol.addItem("Angstrom^3")
         self.connect(self.CBoxvol,QtCore.SIGNAL('currentIndexChanged(const QString&)'),self.boxChange)
         self.CBoxvol.setFixedSize(100,20)
 	
 	
-        self.CBoxDistance = QtGui.QComboBox()
+        self.CBoxDistance = QtWidgets.QComboBox()
         self.CBoxDistance.addItem("Bohr")
         self.CBoxDistance.addItem("Angstrom")
         self.connect(self.CBoxDistance,QtCore.SIGNAL('currentIndexChanged(const QString&)'),self.boxChange)
         self.CBoxDistance.setFixedSize(100,20)
 
-        self.CBoxpress = QtGui.QComboBox()
+        self.CBoxpress = QtWidgets.QComboBox()
         self.CBoxpress.addItem("Ha/bohr^3")
         self.CBoxpress.addItem("GPa")
         self.connect(self.CBoxpress,QtCore.SIGNAL('currentIndexChanged(const QString&)'),self.boxChange)
         self.CBoxpress.setFixedSize(100,20)	
         
-        self.CBoxtemp = QtGui.QComboBox()
+        self.CBoxtemp = QtWidgets.QComboBox()
         self.CBoxtemp.addItem("K")
         self.CBoxtemp.addItem("C")
         self.connect(self.CBoxtemp,QtCore.SIGNAL('currentIndexChanged(const QString&)'),self.boxChange)		
         self.CBoxtemp.setFixedSize(100,20)	
 
-        self.CBoxAngle = QtGui.QComboBox()
+        self.CBoxAngle = QtWidgets.QComboBox()
         self.CBoxAngle.addItem("Degree")
         self.CBoxAngle.addItem("Radian")
         self.connect(self.CBoxAngle,QtCore.SIGNAL('currentIndexChanged(const QString&)'),self.boxChange)		
@@ -226,7 +224,7 @@ class Conversion(QtGui.QWidget):
         return self.units_change
     
     def center(self):
-        screen = QtGui.QDesktopWidget().screenGeometry()
+        screen = QtWidgets.QDesktopWidget().screenGeometry()
         size =  self.geometry()
         self.move((screen.width()-size.width())/2, (screen.height()-size.height())/2)
         

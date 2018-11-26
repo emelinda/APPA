@@ -7,9 +7,12 @@ author: Martin Alexandre
 last edited: May 2013
 """
 
-import os, sys, time
-import string, math, re
+import os
+import sys
+import time
+import string
 import commands
+from scipy.constants import physical_constants as pc
 from scipy.io import netcdf
 import numpy as np
 
@@ -23,11 +26,12 @@ except :
     pass;
 
 class MolecularDynamicFile:
-    
-  Ha_eV = 27.2113845e0   # Conversion factor 1 Hartree = 27,2113845 eV
-  kb_eVK = 8.617342e-5   # Boltzman constant in eV/K  = (1.380658e-23)/(1.60217733e-19) #eV/K
-  amu_emass = 1.660538782e-27/9.10938215e-31 # 1 atomic mass unit, in electronic mass
-  fact = 29421.033e0     # Conversion factor hartree/bohr^3 en GPa
+
+  Bohr_Ang = pc['Bohr radius'][0]
+  Ha_eV = pc['Hartree energy in eV'][0]         # Conversion factor 1 Hartree = 27,2113845 eV
+  kb_eVK = pc['Boltzmann constant in eV/K'][0]   # Boltzman constant in eV/K  = (1.380658e-23)/(1.60217733e-19) #eV/K
+  amu_emass = pc['atomic mass constant'][0]/pc['electron mass'][0] # 1 atomic mass unit, in electronic mass
+  fact = pc['electron volt-joule relationship'][0]*Ha_eV/(Bohr_Ang**3*(10**9)) # Conversion factor hartree/bohr^3 to GPa
   namefile1 = ""
   namefile2 = ""
   ni = 0
@@ -105,135 +109,141 @@ class MolecularDynamicFile:
 #--------METHODS--------------#
 #-----------------------------#
   def read_ascii(self):
-      if 1==1:
+
+      # Load file
+      message = "Unable to load {0} ".format(self.namefile2)
       #try:
+      lines = open(os.path.join(os.getcwd(),self.namefile2),'r').read().split('\n')[:-1]
+      #except:
+      #    sys.exit(0)	
 
-          #Read the number of image:
-          message = "Unable to read the number of image "
-          try:
-              temp = commands.getoutput('grep \"nimage =\" ' + self.namefile2 + '  | awk \'{print $3}\'')
-              self.n_image = int(temp)
-          except:
-              self.n_image = 1
+      #Read the number of image:
+      message = "Unable to read the number of image "
+      try:
+          ans = filter(lambda line: "nimage =" in line ,lines)
+          #temp = commands.getoutput('grep \"nimage =\" ' + self.namefile2 + '  | awk \'{print $3}\'')
+          self.n_image = int(ans)
+      except:
+          self.n_image = 1
 
-          #Reading potential energy:
-          message = "Unable to read potential energy "
-          if self.n_image == 1 :
-              temp = commands.getoutput('grep \"Total energy\" ' + self.namefile2 + '  | awk \'{print $5}\'')
-          else:
-              temp = commands.getoutput('grep \"Potential energy\" ' + self.namefile2 + '  | awk \'{print $4}\'')
-          self.E_pot = np.array(temp.split('\n'), dtype=float)
-  
-          
-          self.ni = 1 #Set the initial step to 1
-          temp =  len(self.E_pot)
-          self.nf = temp 
-          self.Nbtime = temp 
-                
-          #Reading the number of atom
-          message = "Unable to read the number of atoms"
-          temp = commands.getoutput('grep \"natom\" ' + self.namefile2 + '  | awk \'{print $6}\'')
-          self.natom = int(temp)
-
-          #Reading acell:
-          message = "Unable to read acell"
-          temp = commands.getoutput('grep  \" acell \" '+self.namefile2+' | awk \'{print $2,$3,$4 }\' ')
-          if len(np.array(temp.split(),dtype=float)) == 3:
-              acell = np.reshape(np.array(temp.split(),dtype=float),3)
-              self.acell = np.array([[acell,]*self.n_image,]*self.Nbtime)
-
-          #Reading the primitive vectors:
-          message = "Unable to read the primitive vectors"
-          temp = commands.getoutput(' grep -A 3  \"Real(R)+Recip(G)\" '\
-                                        + self.namefile2 + '  | awk \'{print $2,$3,$4 }\' | sed \'/space primitive vectors,/d\' ')
-          
-          if len(np.array(temp.split(),dtype=float)) == 9:
-              rprim = np.reshape(np.array(temp.split(),dtype=float),(3,3))
-              self.rprimd = np.array([[rprim,]*self.Nbtime])
-          else:
-              self.rprimd = np.reshape(np.array(temp.split()[0:self.n_image*self.Nbtime*9],dtype=float),(self.Nbtime,self.n_image,3,3))
-              self.rprimd[:,:,0,:] = self.rprimd[:,:,0,:] * self.acell[0,:]
-              self.rprimd[:,:,1,:] = self.rprimd[:,:,1,:] * self.acell[1,:]
-              self.rprimd[:,:,2,:] = self.rprimd[:,:,2,:] * self.acell[2,:]
-          
-          #Reading velocity of particules:
-          message = "Unable to read the velocity of particules"
-          temp = commands.getoutput(' grep -A '+str(self.natom)+'  \"Cartesian velocities\" '\
-                                          + self.namefile2 + '  | awk \'{print $1,$2,$3 }\'| sed \'/--/d\' | sed \'/Cartesian velocities (vel)/d\' ' )
-          self.vel = np.reshape(np.array(temp.split()[0:self.n_image*self.Nbtime*self.natom*3],dtype=float),(self.Nbtime,self.n_image,self.natom,3))
-
-          #Reading position of particules (Cartesian):
-          message = "Unable to read the position of particules (cart)"
-          temp = commands.getoutput(' grep -A '+str(self.natom)+'  \"Cartesian coordinates\" '\
-                                        + self.namefile2 + '  | awk \'{print $1,$2,$3 }\'| sed \'/--/d\' | sed \'/Cartesian coordinates/d\' ' )
-          self.xcart = np.reshape(np.array(temp.split()[0:self.n_image*self.Nbtime*self.natom*3],dtype=float),(self.Nbtime,self.n_image,self.natom,3))
-
-          #Reading position of particules (Reduced):
-          message = "Unable to read the position of particules (red)"
-          temp = commands.getoutput(' grep -A '+str(self.natom)+'  \"Reduced coordinates\" '\
-                                        + self.namefile2 + '  | awk \'{print $1,$2,$3 }\'| sed \'/--/d\' | sed \'/Reduced coordinates/d\' ' )
-          
-          self.xred = np.reshape(np.array(temp.split()[0:self.n_image*self.Nbtime*self.natom*3],dtype=float),(self.Nbtime,self.n_image,self.natom,3))
-
-          #Reading stress of particules:
-          message = "Unable to read stress of particules"
-          if self.n_image==1:
-              temp = commands.getoutput(' grep -A 3  \"Cartesian components of stress\" '+ self.namefile2\
-                                        + '  | awk \'{print $3,$6 }\'| sed \'/^\s/d\' | sed \'/of/d\' ')
-          else:
-              temp = commands.getoutput(' grep -A 3  \"Cartesian components of stress\" '+ self.namefile2\
-                                        + '  | awk \'{print $4,$7 }\'| sed \'/^\s/d\' | sed \'/of/d\'| sed \'/Pressure/d\'')
-
-          self.temp = np.reshape(np.array(temp.split()[0:self.n_image*self.Nbtime*6],dtype=float),(self.Nbtime,self.n_image,6))
-          s = (self.Nbtime,self.n_image,6)
-          self.stress = np.zeros(s)
-          nb = len(temp) / 6
-          ni = self.Nbtime - nb
-          
-          self.stress[ni:]    = self.temp    
-          self.stress[ni:,:,1]= self.temp[:,:,2]
-          self.stress[ni:,:,2]= self.temp[:,:,4]
-          self.stress[ni:,:,3]= self.temp[:,:,1]
-          self.stress[ni:,:,4]= self.temp[:,:,3]
-          del self.temp
+      # reading potential energy:
+      message = "Unable to read potential energy "
+      if self.n_image == 1 :
+          ans = filter(lambda line: "Total energy (etotal) [Ha]" in line ,lines)
+      else:
+          ans = filter(lambda line: "Potential energy" in line ,lines)
+      
+      self.E_pot = np.array(map(lambda line: line.split()[-1] ,ans), dtype=np.float64)
+      #print self.E_pot
+      #stop 
+      
+      self.ni = 1 #Set the initial step to 1
+      temp =  len(self.E_pot)
+      self.nf = temp 
+      self.Nbtime = temp 
             
-          #Reading the type of particules:
-          message = "Unable to read the type of particules"
-          temp = commands.getoutput('grep -A '+str(int(self.natom/20))+ '  \" typat \" '+self.namefile2+' |  sed \'s/typat//\'')
-          self.typat = np.array(temp.split(), dtype=int)
+      #Reading the number of atom
+      message = "Unable to read the number of atoms"
+      ans = filter(lambda line: "natom  " in line ,lines).pop().split()[-1]
+      self.natom = int(ans)
+
+      #Reading acell:
+      message = "Unable to read acell"
+      ans = map(lambda line: line.split()[1:4], filter(lambda line: "acell " in line ,lines))
+      self.acell = np.array(ans, dtype=np.float64)
+
+      #Reading the primitive vectors:
+      message = "Unable to read the primitive vectors"
+      temp = commands.getoutput(' grep -A 3  \"Real(R)+Recip(G)\" '\
+                                    + self.namefile2 + '  | awk \'{print $2,$3,$4 }\' | sed \'/space primitive vectors,/d\' ')
+      
+      if len(np.array(temp.split(),dtype=float)) == 9:
+          rprim = np.reshape(np.array(temp.split(),dtype=float),(3,3))
+          self.rprimd = np.array([[rprim,]*self.Nbtime])
+      else:
+          self.rprimd = np.reshape(np.array(temp.split()[0:self.n_image*self.Nbtime*9],dtype=float),(self.Nbtime,self.n_image,3,3))
+          self.rprimd[:,:,0,:] = self.rprimd[:,:,0,:] * self.acell[0,:]
+          self.rprimd[:,:,1,:] = self.rprimd[:,:,1,:] * self.acell[1,:]
+          self.rprimd[:,:,2,:] = self.rprimd[:,:,2,:] * self.acell[2,:]
+      
+      #Reading velocity of particules:
+      message = "Unable to read the velocity of particules"
+      temp = commands.getoutput(' grep -A '+str(self.natom)+'  \"Cartesian velocities\" '\
+                                      + self.namefile2 + '  | awk \'{print $1,$2,$3 }\'| sed \'/--/d\' | sed \'/Cartesian velocities (vel)/d\' ' )
+      self.vel = np.reshape(np.array(temp.split()[0:self.n_image*self.Nbtime*self.natom*3],dtype=float),(self.Nbtime,self.n_image,self.natom,3))
+
+      #Reading position of particules (Cartesian):
+      message = "Unable to read the position of particules (cart)"
+      temp = commands.getoutput(' grep -A '+str(self.natom)+'  \"Cartesian coordinates\" '\
+                                    + self.namefile2 + '  | awk \'{print $1,$2,$3 }\'| sed \'/--/d\' | sed \'/Cartesian coordinates/d\' ' )
+      self.xcart = np.reshape(np.array(temp.split()[0:self.n_image*self.Nbtime*self.natom*3],dtype=float),(self.Nbtime,self.n_image,self.natom,3))
+
+      #Reading position of particules (Reduced):
+      message = "Unable to read the position of particules (red)"
+      temp = commands.getoutput(' grep -A '+str(self.natom)+'  \"Reduced coordinates\" '\
+                                    + self.namefile2 + '  | awk \'{print $1,$2,$3 }\'| sed \'/--/d\' | sed \'/Reduced coordinates/d\' ' )
+      
+      self.xred = np.reshape(np.array(temp.split()[0:self.n_image*self.Nbtime*self.natom*3],dtype=float),(self.Nbtime,self.n_image,self.natom,3))
+
+      #Reading stress of particules:
+      message = "Unable to read stress of particules"
+      if self.n_image==1:
+          temp = commands.getoutput(' grep -A 3  \"Cartesian components of stress\" '+ self.namefile2\
+                                    + '  | awk \'{print $3,$6 }\'| sed \'/^\s/d\' | sed \'/of/d\' ')
+      else:
+          temp = commands.getoutput(' grep -A 3  \"Cartesian components of stress\" '+ self.namefile2\
+                                    + '  | awk \'{print $4,$7 }\'| sed \'/^\s/d\' | sed \'/of/d\'| sed \'/Pressure/d\'')
+
+      self.temp = np.reshape(np.array(temp.split()[0:self.n_image*self.Nbtime*6],dtype=float),(self.Nbtime,self.n_image,6))
+      s = (self.Nbtime,self.n_image,6)
+      self.stress = np.zeros(s)
+      nb = len(temp) / 6
+      ni = self.Nbtime - nb
+      
+      self.stress[ni:]    = self.temp    
+      self.stress[ni:,:,1]= self.temp[:,:,2]
+      self.stress[ni:,:,2]= self.temp[:,:,4]
+      self.stress[ni:,:,3]= self.temp[:,:,1]
+      self.stress[ni:,:,4]= self.temp[:,:,3]
+      del self.temp
+        
+      #Reading the type of particules:
+      message = "Unable to read the type of particules"
+      temp = commands.getoutput('grep -A '+str(int(self.natom/20))+ '  \" typat \" '+self.namefile2+' |  sed \'s/typat//\'')
+      self.typat = np.array(temp.split(), dtype=int)
 
 
-          #Reading mass of particules:
-          temp = commands.getoutput('grep -P -A' + str(int(max(self.typat))/3) +' \'amu\s(.*)\' '+self.namefile2+' | sed \'s/amu//\'')
-          self.amu = np.array(temp.split(), dtype=float)
+      #Reading mass of particules:
+      temp = commands.getoutput('grep -P -A' + str(int(max(self.typat))/3) +' \'amu\s(.*)\' '+self.namefile2+' | sed \'s/amu//\'')
+      self.amu = np.array(temp.split(), dtype=float)
 
-          #Reading znucl :
-          message = "Unable to read znucl"
-          temp = commands.getoutput('grep  \"znucl \" '+self.namefile2+' | sed \'s/znucl//\'')
-          self.znucl = np.array(temp.split(), dtype=float)
+      #Reading znucl :
+      message = "Unable to read znucl"
+      temp = commands.getoutput('grep  \"znucl \" '+self.namefile2+' | sed \'s/znucl//\'')
+      self.znucl = np.array(temp.split(), dtype=float)
 
-          #Reading dtion:
-          try:
-              #try to read dtion :
-              temp = commands.getoutput('grep  \"dtion \" '+self.namefile2+' | awk \'{print $2}\'')
-              self.dtion = float(temp)
-          except:
-              #If dtion doesn't exist, it's set to 100 (default value)
-              self.dtion = 100
-                
-          self.goodFile = True
+      #Reading dtion:
+      try:
+          #try to read dtion :
+          temp = commands.getoutput('grep  \"dtion \" '+self.namefile2+' | awk \'{print $2}\'')
+          self.dtion = float(temp)
+      except:
+          #If dtion doesn't exist, it's set to 100 (default value)
+          self.dtion = 100
+            
+      self.goodFile = True
 
-          #-----------Calculation of some quantities------------#
-          #-----------not available in the output File----------# 
-          self.mass_calculation()
-          self.volume_calculation()
-          self.angles_calculation()
-          self.E_kinCalculation()
-          self.temperature_calculation()
-          self.pressure_calculation()
-          #-----------------------------------------------------#
+      #-----------Calculation of some quantities------------#
+      #-----------not available in the output File----------# 
+      self.mass_calculation()
+      self.volume_calculation()
+      self.angles_calculation()
+      self.E_kinCalculation()
+      self.temperature_calculation()
+      self.pressure_calculation()
+      #-----------------------------------------------------#
 
-        #-----------------------------------------------------#
+      #-----------------------------------------------------#
 
 #      except:    
 #          self.goodFile = False

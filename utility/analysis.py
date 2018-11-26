@@ -7,11 +7,9 @@ author: Martin Alexandre
 last edited: May 2013
 """
 
-import sys,os,commands,time
-import string, math
-from numpy import array,sqrt,zeros,conjugate,arange,linspace,exp,log,sin,dot,degrees,arccos
-from numpy.fft import rfft,fft, ifft
-from numpy.linalg import inv
+import os 
+import commands
+import numpy as np
 
 #Fortran Code
 import fortran.math as math
@@ -31,7 +29,7 @@ class Correlation:
 
         self.nbtime = len(serie1)               # Number of steps in the simulation
         self.nbatom = len(serie1[0])               # Number of atoms in the simulation
-        self.CorrelationFunction = zeros(2*self.nbtime,complex) # (Auto)correlation function array
+        self.CorrelationFunction = np.zeros(2*self.nbtime,complex) # (Auto)correlation function array
         self.calculation(serie1,serie2)
 
    #------------Methods-----------------------#
@@ -48,10 +46,10 @@ class Correlation:
 
             for j in range(3):
 
-                self.CorrelationFunction +=  ifft(conjugate(fft(serie1[:,at,j],2*self.nbtime,0))*fft(serie2[:,at,j],2*self.nbtime,0))
+                self.CorrelationFunction +=  np.fft.ifft(np.conjugate(np.fft.fft(serie1[:,at,j],2*self.nbtime,0))*np.fft.fft(serie2[:,at,j],2*self.nbtime,0))
 
         #Normalisation by the therm 1/ ((nbtime - t) * 3 * N). N is the number of atoms, nbtime the number of step and t the step.
-        self.CorrelationFunction = self.CorrelationFunction.real[:self.nbtime] / ((self.nbtime-arange(self.nbtime)) * 3 * self.nbatom)
+        self.CorrelationFunction = self.CorrelationFunction.real[:self.nbtime] / ((self.nbtime-np.arange(self.nbtime)) * 3 * self.nbatom)
 
 
     def getCorrelationFunction(self,normalize = False):
@@ -81,26 +79,26 @@ class DOS:
         self.VACF = pdata                # Velocity autocorelation Function (array 1D)
         self.dt = self.dtion * self.atu        # time step (in ps)
         self.nbtime = len(pdata)        # Number of steps
-        self.times = self.dt * arange(self.nbtime)# 1D array with the times of the simulation
+        self.times = self.dt * np.arange(self.nbtime)# 1D array with the times of the simulation
         self.fact = 0.6582054674822119  # conversion factor ps => 1/meV
 
 
         
         #Calculation of sigma for the gaussian function
         self.resolution = pres
-        self.sigma = 1.0/(1.5192669*self.resolution/(2.0*sqrt(2.0*log(2.0))))
+        self.sigma = 1.0/(1.5192669*self.resolution/(2.0*np.sqrt(2.0*np.log(2.0))))
 
 
 
     def getDOS(self):
         #Return array (1D) phonons density of states (1/mev)
         DOS = self.windowGaussian(self.VACF, self.times, self.sigma)
-        return fft(DOS,len(DOS),0).real[:len(self.VACF)] * self.dt * self.fact
+        return np.fft.fft(DOS,len(DOS),0).real[:len(self.VACF)] * self.dt * self.fact
 
 
     def getFrequencies(self):
         #Return array (1D) with the frenquencies (mev)
-        frequencies = 4.1356 * arange(self.nbtime)/(2 * self.nbtime*self.dt)
+        frequencies = 4.1356 * np.arange(self.nbtime)/(2 * self.nbtime*self.dt)
         return frequencies
 
 
@@ -110,11 +108,11 @@ class DOS:
         # because the final array is periodized function
 
 
-        gauss= exp(-0.5*( (x - x0)**2 / (2*s**2)))
+        gauss= np.exp(-0.5*( (x - x0)**2 / (2*s**2)))
 
 
         # Creation of the final array:
-        res = zeros(2*len(inputSeries))
+        res = np.zeros(2*len(inputSeries))
 
         # Multiplying the input serie by the gaussian:
         win = gauss*inputSeries
@@ -134,7 +132,7 @@ class DOS:
 
 
     def getSprectumDOS(self):
-        return  rfft(self.VACF,2*len(self.VACF)-1,0).real * 2 * self.dt * self.fact
+        return  np.fft.rfft(self.VACF,2*len(self.VACF)-1,0).real * 2 * self.dt * self.fact
 
 
 
@@ -239,7 +237,7 @@ class RDF:
         b_max = max(acell[:,1])
         c_max = max(acell[:,2])
 
-        rprim = zeros((3,3))           # primitives vectors of the cell
+        rprim = np.zeros((3,3))           # primitives vectors of the cell
         rprim[0] = file.getRPrim()[0,0]
         rprim[1] = file.getRPrim()[0,1]
         rprim[2] = file.getRPrim()[0,2]
@@ -263,19 +261,19 @@ class RDF:
         typat = file.getTypat()           # Type of particule
 
         if atom1 == 0:
-            indexAtom1 = array([i for i,x in enumerate(typat) if x == 1 and 2],dtype=int) + 1
+            indexAtom1 = np.array([i for i,x in enumerate(typat) if x == 1 and 2],dtype=int) + 1
         else:
-            indexAtom1 = array([i for i,x in enumerate(typat) if x == atom1],dtype=int) + 1 #get list of the index of typat1 (+1 for fortran)
+            indexAtom1 = np.array([i for i,x in enumerate(typat) if x == atom1],dtype=int) + 1 #get list of the index of typat1 (+1 for fortran)
 
             
         if atom2 == 0:
-            indexAtom2 = array([i for i,x in enumerate(typat) if x == 1 and 2 ],dtype=int) + 1
+            indexAtom2 = np.array([i for i,x in enumerate(typat) if x == 1 and 2 ],dtype=int) + 1
         else:
-            indexAtom2 = array([i for i,x in enumerate(typat) if x == atom2],dtype=int) + 1 #get list of the index of typat2 (+1 for fortran)
+            indexAtom2 = np.array([i for i,x in enumerate(typat) if x == atom2],dtype=int) + 1 #get list of the index of typat2 (+1 for fortran)
                 
         nbtime =  len(pos)                    # final step
 
-        self.r = arange(maxbin)*deltaR
+        self.r = np.arange(maxbin)*deltaR
 
         if mode == 0:
 
@@ -348,19 +346,19 @@ class DEC:
         typat = file.getTypat()              # Type of particule
 
         if atom1 == 0:
-            indexAtom1 = array([i for i,x in enumerate(typat) if x == 1 and 2],dtype=int) + 1
+            indexAtom1 = np.array([i for i,x in enumerate(typat) if x == 1 and 2],dtype=int) + 1
         else:
-            indexAtom1 = array([i for i,x in enumerate(typat) if x == atom1],dtype=int) + 1 #get list of the index of typat1 (+1 for fortran)
+            indexAtom1 = np.array([i for i,x in enumerate(typat) if x == atom1],dtype=int) + 1 #get list of the index of typat1 (+1 for fortran)
 
             
         if atom2 == 0:
-            indexAtom2 = array([i for i,x in enumerate(typat) if x == 1 and 2 ],dtype=int) + 1
+            indexAtom2 = np.array([i for i,x in enumerate(typat) if x == 1 and 2 ],dtype=int) + 1
         else:
-            indexAtom2 = array([i for i,x in enumerate(typat) if x == atom2],dtype=int) + 1 #get list of the index of typat2 (+1 for fortran)
+            indexAtom2 = np.array([i for i,x in enumerate(typat) if x == atom2],dtype=int) + 1 #get list of the index of typat2 (+1 for fortran)
                 
         nbtime =  len(pos)                    # final step
 
-        self.r = arange(maxbin)*deltaR
+        self.r = np.arange(maxbin)*deltaR
 
         self.n = topo.n_distribution(nei,nbtime,data,inc,deltaR,indexAtom1,indexAtom2,0,self.r)        
 
@@ -394,7 +392,7 @@ class ADF:
         b = acell[:,1]
         c = acell[:,2]
 
-        rprim = zeros((3,3))           # primitives vectors of the cell
+        rprim = np.zeros((3,3))           # primitives vectors of the cell
         rprim[0] = file.getRPrim()[0,0]
         rprim[1] = file.getRPrim()[0,1]
         rprim[2] = file.getRPrim()[0,2]
@@ -406,19 +404,19 @@ class ADF:
         typat = file.getTypat()              # Type of particule
 
         if atom1 == 0:
-            indexAtom1 = array([i for i,x in enumerate(typat) if x == 1 and 2],dtype=int) + 1
+            indexAtom1 = np.array([i for i,x in enumerate(typat) if x == 1 and 2],dtype=int) + 1
         else:
-            indexAtom1 = array([i for i,x in enumerate(typat) if x == atom1],dtype=int) + 1 #get list of the index of typat1 (+1 for fortran)
+            indexAtom1 = np.array([i for i,x in enumerate(typat) if x == atom1],dtype=int) + 1 #get list of the index of typat1 (+1 for fortran)
 
 
         if atom2 == 0:
-            indexAtom2 = array([i for i,x in enumerate(typat) if x == 1 and 2 ],dtype=int) + 1
+            indexAtom2 = np.array([i for i,x in enumerate(typat) if x == 1 and 2 ],dtype=int) + 1
         else:
-            indexAtom2 = array([i for i,x in enumerate(typat) if x == atom2],dtype=int) + 1 #get list of the index of typat2 (+1 for fortran)            
+            indexAtom2 = np.array([i for i,x in enumerate(typat) if x == atom2],dtype=int) + 1 #get list of the index of typat2 (+1 for fortran)            
 
         nbtime =  len(pos)                    # final step
 
-        self.t = arange(maxbin)*deltaTheta
+        self.t = np.arange(maxbin)*deltaTheta
 
         self.a = topo.angular_distribution(nei,nbtime,pos,rprim,inc,a,b,c,deltaTheta,indexAtom1,indexAtom2,self.t)
 
@@ -456,7 +454,7 @@ class NDF:
         b = acell[:,1]
         c = acell[:,2]
 
-        rprim = zeros((3,3))           # primitives vectors of the cell
+        rprim = np.zeros((3,3))           # primitives vectors of the cell
         rprim[0] = file.getRPrim()[0,0]
         rprim[1] = file.getRPrim()[0,1]
         rprim[2] = file.getRPrim()[0,2]
@@ -466,15 +464,15 @@ class NDF:
         typat = file.getTypat()              # Type of particule
 
         if atom1 == 0:
-            indexAtom1 = array([i for i,x in enumerate(typat) if x == 1 and 2],dtype=int) + 1
+            indexAtom1 = np.array([i for i,x in enumerate(typat) if x == 1 and 2],dtype=int) + 1
         else:
-            indexAtom1 = array([i for i,x in enumerate(typat) if x == atom1],dtype=int) + 1 #get list of the index of typat1 (+1 for fortran)
+            indexAtom1 = np.array([i for i,x in enumerate(typat) if x == atom1],dtype=int) + 1 #get list of the index of typat1 (+1 for fortran)
 
 
         if atom2 == 0:
-            indexAtom2 = array([i for i,x in enumerate(typat) if x == 1 and 2 ],dtype=int) + 1
+            indexAtom2 = np.array([i for i,x in enumerate(typat) if x == 1 and 2 ],dtype=int) + 1
         else:
-            indexAtom2 = array([i for i,x in enumerate(typat) if x == atom2],dtype=int) + 1 #get list of the index of typat2 (+1 for fortran)
+            indexAtom2 = np.array([i for i,x in enumerate(typat) if x == atom2],dtype=int) + 1 #get list of the index of typat2 (+1 for fortran)
 
         nbtime =  len(pos)                    # final step
 
@@ -530,7 +528,7 @@ class Proba:
         b = acell[:,1]
         c = acell[:,2]
 
-        rprim = zeros((3,3))           # primitives vectors of the cell
+        rprim = np.zeros((3,3))           # primitives vectors of the cell
         rprim[0] = file.getRPrim()[0,0]
         rprim[1] = file.getRPrim()[0,1]
         rprim[2] = file.getRPrim()[0,2]
@@ -538,13 +536,13 @@ class Proba:
         typat = file.getTypat()              # Type of particule
 
         if atom1 == 0:
-            indexAtom1 = array([i for i,x in enumerate(typat) if x == 1 and 2],dtype=int) + 1
+            indexAtom1 = np.array([i for i,x in enumerate(typat) if x == 1 and 2],dtype=int) + 1
         else:
-            indexAtom1 = array([i for i,x in enumerate(typat) if x == atom1],dtype=int) + 1 #get list of the index of typat1 (+1 for fortran)
+            indexAtom1 = np.array([i for i,x in enumerate(typat) if x == atom1],dtype=int) + 1 #get list of the index of typat1 (+1 for fortran)
             
         nbtime =  len(pos)                    # final step
 
-        self.n = arange(1,nei+1)
+        self.n = np.arange(1,nei+1)
 
         self.p = topo.probability(nei,nbtime,pos,rprim,a,b,c,indexAtom1,indexAtom1)
 
@@ -575,10 +573,10 @@ class MSD:
 
         typat = file.getTypat()        # Type of particule
         
-        indexAtom1 = array([i for i,x in enumerate(typat) if x == atom1],dtype=int) + 1 #get list of the index of typat1 (+1 for fortran)
+        indexAtom1 = np.array([i for i,x in enumerate(typat) if x == atom1],dtype=int) + 1 #get list of the index of typat1 (+1 for fortran)
 
         self.mds =  math.mean_square_displacement(pos,indexAtom1)
-        self.x = arange(len(self.mds))
+        self.x = np.arange(len(self.mds))
 
     def getX(self):
         return self.x
@@ -777,7 +775,7 @@ class deformation:
                 sigma = sum(sigma[:,:]) / len(sigma)
 
                 rprim = self.files[i].getRPrim()[0,:,:]
-                d = dot(inv(self.rprim_0),rprim)
+                d = np.dot(np.linalg.inv(self.rprim_0),rprim)
                 self.deform(i,d,sigma)
             return
 
@@ -796,7 +794,7 @@ class deformation:
                     if i != self.datasetWD :
                         sigma = self.files['WD'].getStress()[i]
                         rprim = self.files['WD'].getRPrim()[i]
-                        d = dot(inv(self.rprim_0),rprim)
+                        d = np.dot(np.linalg.inv(self.rprim_0),rprim)
                         self.deform(j,d,sigma)
                         j += 1
 
@@ -806,7 +804,7 @@ class deformation:
 
                         sigma = self.files[i].getStress()[j]
                         rprim = self.files[i].getRPrim()[j]
-                        d = dot(inv(self.rprim_0),rprim)
+                        d = np.dot(np.linalg.inv(self.rprim_0),rprim)
                         self.deform(i,d,sigma)
                 return
         else :

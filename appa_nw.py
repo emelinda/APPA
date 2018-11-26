@@ -8,14 +8,6 @@ last edited: April 2013
 """
 import sys,readline,os,commands,subprocess
 
-try:
-    import fortran.math
-except:
-    print 'To use APPA, you first need to compile a FORTRAN file:'
-    print '   cd ~appa/fortran'
-    print '   f2py -c math.f90 -m math'
-    sys.exit()
-
 #Reading
 import reading.read as Read
 import reading.input as Input
@@ -30,10 +22,8 @@ try:
 except:
     canv = False
 
-#Fortran code
-import fortran.math as Math
+import numpy as np
 
-from numpy import linspace,zeros,where
 
 #---------------------------------------------#
 #  __  __      _   _               _          #
@@ -137,36 +127,34 @@ def showData(file,units):
     print "initial step :  " + str(file.getNi())
     print "final   step :  " + str(file.getNf())                
                                
-    E_tot = units['Energy'][1] *  Math.average(file.getE_Tot())
-    deviation = file.getStandardDeviation(units['Energy'][1] * file.getE_Tot(), E_tot)        
+    E_tot = units['Energy'][1] *  np.mean(file.getE_Tot())
+    deviation = np.std(units['Energy'][1] * file.getE_Tot(), E_tot)
     print 'Total Energy ('+ str(units['Energy'][0]) +"): " + displayData(E_tot,deviation)
         
         
-    Vol = units['Volume'][1] * Math.average(file.getVol())
-    deviation = file.getStandardDeviation( file.getVol() * units['Volume'][1] , Vol)
+    Vol = units['Volume'][1] * np.mean(file.getVol())
+    deviation = np.std( file.getVol() * units['Volume'][1] )
     print 'Volume ('+str(units['Volume'][0])+")  : " + displayData(Vol,deviation)
     
     Temp = file.getTemp()        
-    ATemp =  Math.average(Temp) - units['Temperature'][1]        
-    deviation = file.getStandardDeviation( Temp - units['Temperature'][1] , ATemp)
+    ATemp =  np.mean(Temp) - units['Temperature'][1]        
+    deviation = np.std( Temp - units['Temperature'][1] )
     print 'Temperature ('+str(units['Temperature'][0])+")  : " + displayData(ATemp,deviation)
         
-                
-                       
-    Press =  Math.average(file.getPress() ) * units['Pressure'][1]
-    deviation = file.getStandardDeviation(units['Pressure'][1] * file.getPress(), Press)
+    Press =  np.mean(file.getPress() ) * units['Pressure'][1]
+    deviation = np.std(units['Pressure'][1] * file.getPress())
     print 'Pressure ('+str(units['Pressure'][0])+")   : "  + displayData(Press,deviation)    
 
-    Acell =  Math.average(file.getAcell()[:,0]) * units['Distance'][1]
-    deviation = file.getStandardDeviation(units['Distance'][1] * file.getAcell()[:,0], Acell)
+    Acell =  np.mean(file.getAcell()[:,0]) * units['Distance'][1]
+    deviation = np.std(units['Distance'][1] * file.getAcell()[:,0])
     print 'a ('+str(units['Distance'][0])+")     : "  + displayData(Acell,deviation)    
 
-    Acell =  Math.average(file.getAcell()[:,1]) * units['Distance'][1]
-    deviation = file.getStandardDeviation(units['Distance'][1] * file.getAcell()[:,1], Acell)
+    Acell =  np.mean(file.getAcell()[:,1]) * units['Distance'][1]
+    deviation = np.std(units['Distance'][1] * file.getAcell()[:,1])
     print 'b ('+str(units['Distance'][0])+")     : "  + displayData(Acell,deviation)    
 
-    Acell =  Math.average(file.getAcell()[:,2]) * units['Distance'][1]
-    deviation = file.getStandardDeviation(units['Distance'][1] * file.getAcell()[:,2], Acell)
+    Acell =  np.mean(file.getAcell()[:,2]) * units['Distance'][1]
+    deviation = np.std(units['Distance'][1] * file.getAcell()[:,2])
     print 'c ('+str(units['Distance'][0])+")     : "  + displayData(Acell,deviation)    
     
     print "-----------------------------------------"
@@ -467,7 +455,7 @@ while i<size_input :
 
             if choiceQuantitie == 1:
                 
-                x = linspace(MD_file.getNi(),MD_file.getNf()-1,\
+                x = np.linspace(MD_file.getNi(),MD_file.getNf()-1,\
                              MD_file.getNf()-MD_file.getNi())# Temporarily !!!
                 y = MD_file.getE_Tot() * units['Energy'][1]                
                 
@@ -486,7 +474,7 @@ while i<size_input :
                 
                 
             elif choiceQuantitie == 2:
-                x = linspace(MD_file.getNi(),MD_file.getNf()-1,MD_file.getNf()-MD_file.getNi())# Temporarily !!!
+                x = np.linspace(MD_file.getNi(),MD_file.getNf()-1,MD_file.getNf()-MD_file.getNi())# Temporarily !!!
                 y = MD_file.getE_pot() * units['Energy'][1]
                 
                 if choiceformat == 1 or choiceformat == 3:
@@ -505,7 +493,7 @@ while i<size_input :
                 
             elif choiceQuantitie == 3:
                     
-                x = linspace(MD_file.getNi(),MD_file.getNf()-1,MD_file.getNf()-MD_file.getNi())# Temporarily !!!
+                x = np.linspace(MD_file.getNi(),MD_file.getNf()-1,MD_file.getNf()-MD_file.getNi())# Temporarily !!!
                 y = MD_file.getE_kin() * units['Energy'][1]                
                 
                 if choiceformat == 1 or choiceformat == 3:        
@@ -524,7 +512,7 @@ while i<size_input :
                 
             elif choiceQuantitie == 4:
                         
-                x = linspace(MD_file.getNi(),MD_file.getNf()-1,MD_file.getNf()-MD_file.getNi())# Temporarily !!!
+                x = np.linspace(MD_file.getNi(),MD_file.getNf()-1,MD_file.getNf()-MD_file.getNi())# Temporarily !!!
                 y = MD_file.getTemp() - units['Temperature'][1]
                 
                 if choiceformat == 1 or choiceformat == 3:        
@@ -540,7 +528,7 @@ while i<size_input :
                     print 'File save sucessful!'
                 
             elif choiceQuantitie == 5:
-                x = linspace(MD_file.getNi(),MD_file.getNf()-1,MD_file.getNf()-MD_file.getNi())# Temporarily !!!
+                x = np.linspace(MD_file.getNi(),MD_file.getNf()-1,MD_file.getNf()-MD_file.getNi())# Temporarily !!!
                 y = MD_file.getPress() * units['Pressure'][1]
                     
                 if choiceformat == 1 or choiceformat == 3:        
@@ -557,7 +545,7 @@ while i<size_input :
                         
                         
             elif choiceQuantitie == 6:
-                x = linspace(MD_file.getNi(),MD_file.getNf()-1,MD_file.getNf()-MD_file.getNi())# Temporarily !!!
+                x = np.linspace(MD_file.getNi(),MD_file.getNf()-1,MD_file.getNf()-MD_file.getNi())# Temporarily !!!
                 y = MD_file.getStress()  * units['Pressure'][1]
                         
                 if choiceformat == 1 or choiceformat == 3:        
@@ -574,7 +562,7 @@ while i<size_input :
                     print 'File save sucessful!'
 
             elif choiceQuantitie == 7:
-                x = linspace(MD_file.getNi(),MD_file.getNf()-1,MD_file.getNf()-MD_file.getNi())
+                x = np.linspace(MD_file.getNi(),MD_file.getNf()-1,MD_file.getNf()-MD_file.getNi())
                 y = MD_file.getAcell() * units['Distance'][1]
                 if choiceformat == 1 or choiceformat == 3:
                     fname = saveFile('dat',name_quantitie)        
@@ -592,7 +580,7 @@ while i<size_input :
                         
             elif choiceQuantitie == 8:
                 y = Analysis.Correlation(MD_file.getVel()).getCorrelationFunction(normalize = True)
-                x = linspace(MD_file.getNi(),MD_file.getNf()-1,MD_file.getNf()-MD_file.getNi())# Temporarily !!!
+                x = np.linspace(MD_file.getNi(),MD_file.getNf()-1,MD_file.getNf()-MD_file.getNi())# Temporarily !!!
                     
                 if choiceformat == 1 or choiceformat == 3:        
                     fname = saveFile('dat',name_quantitie)        

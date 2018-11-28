@@ -134,13 +134,10 @@ class MolecularDynamicFile:
           ans = filter(lambda line: "Potential energy" in line ,lines)
       
       self.E_pot = np.array(map(lambda line: line.split()[-1] ,ans), dtype=np.float64)
-      #print self.E_pot
-      #stop 
       
       self.ni = 1 #Set the initial step to 1
-      temp =  len(self.E_pot)
-      self.nf = temp 
-      self.Nbtime = temp 
+      self.nf = len(self.E_pot)
+      self.Nbtime = len(self.E_pot)
             
       #Reading the number of atom
       message = "Unable to read the number of atoms"
@@ -154,50 +151,64 @@ class MolecularDynamicFile:
 
       #Reading the primitive vectors:
       message = "Unable to read the primitive vectors"
-      temp = commands.getoutput(' grep -A 3  \"Real(R)+Recip(G)\" '\
-                                    + self.namefile2 + '  | awk \'{print $2,$3,$4 }\' | sed \'/space primitive vectors,/d\' ')
-      
-      if len(np.array(temp.split(),dtype=float)) == 9:
-          rprim = np.reshape(np.array(temp.split(),dtype=float),(3,3))
-          self.rprimd = np.array([[rprim,]*self.Nbtime])
+
+      index = filter(lambda i:  'Real(R)+Recip(G)' in lines[i] , np.arange(len(lines))).pop()
+      rprim = np.array(map(lambda line: np.array(line.split()[1:4], dtype = np.float64) ,lines[index+1:index+4]))
+
+      if index:
+	  self.rprimd = np.array([[rprim,]*self.Nbtime])
       else:
-          self.rprimd = np.reshape(np.array(temp.split()[0:self.n_image*self.Nbtime*9],dtype=float),(self.Nbtime,self.n_image,3,3))
+          self.rprimd = np.reshape(np.array(temp.split()[0:self.n_image*self.Nbtime*9],dtype=np.float64), (self.Nbtime,self.n_image,3,3))
           self.rprimd[:,:,0,:] = self.rprimd[:,:,0,:] * self.acell[0,:]
           self.rprimd[:,:,1,:] = self.rprimd[:,:,1,:] * self.acell[1,:]
           self.rprimd[:,:,2,:] = self.rprimd[:,:,2,:] * self.acell[2,:]
-      
+
       #Reading velocity of particules:
       message = "Unable to read the velocity of particules"
-      temp = commands.getoutput(' grep -A '+str(self.natom)+'  \"Cartesian velocities\" '\
-                                      + self.namefile2 + '  | awk \'{print $1,$2,$3 }\'| sed \'/--/d\' | sed \'/Cartesian velocities (vel)/d\' ' )
-      self.vel = np.reshape(np.array(temp.split()[0:self.n_image*self.Nbtime*self.natom*3],dtype=float),(self.Nbtime,self.n_image,self.natom,3))
+      index = filter(lambda i:  'Cartesian velocities' in lines[i] , np.arange(len(lines)))
+
+      if index:
+	  self.vel = map(lambda ind: lines[ind+1:ind+self.natom+1] ,index)
+          self.vel = np.reshape( np.array( map(lambda v: map(lambda line: np.float64(line.split()) ,v) ,self.vel)),(self.Nbtime,self.n_image,self.natom,3) )
+      else:
+	  self.vel = None
 
       #Reading position of particules (Cartesian):
       message = "Unable to read the position of particules (cart)"
-      temp = commands.getoutput(' grep -A '+str(self.natom)+'  \"Cartesian coordinates\" '\
-                                    + self.namefile2 + '  | awk \'{print $1,$2,$3 }\'| sed \'/--/d\' | sed \'/Cartesian coordinates/d\' ' )
-      self.xcart = np.reshape(np.array(temp.split()[0:self.n_image*self.Nbtime*self.natom*3],dtype=float),(self.Nbtime,self.n_image,self.natom,3))
+      index = filter(lambda i:  'Cartesian coordinates' in lines[i] , np.arange(len(lines)))
+
+      if index:
+	  self.xcart = map(lambda ind: lines[ind+1:ind+self.natom+1] ,index)
+          self.xcart = np.reshape( np.array( map(lambda xcart: map(lambda line: np.float64(line.split()) ,xcart) ,self.xcart)),(self.Nbtime,self.n_image,self.natom,3) )
+      else:
+	  self.xcart = None
 
       #Reading position of particules (Reduced):
       message = "Unable to read the position of particules (red)"
-      temp = commands.getoutput(' grep -A '+str(self.natom)+'  \"Reduced coordinates\" '\
-                                    + self.namefile2 + '  | awk \'{print $1,$2,$3 }\'| sed \'/--/d\' | sed \'/Reduced coordinates/d\' ' )
-      
-      self.xred = np.reshape(np.array(temp.split()[0:self.n_image*self.Nbtime*self.natom*3],dtype=float),(self.Nbtime,self.n_image,self.natom,3))
+      index = filter(lambda i:  'Reduced coordinates' in lines[i] , np.arange(len(lines)))
+
+      if index:
+	  self.xred = map(lambda ind: lines[ind+1:ind+self.natom+1] ,index)
+          self.xred = np.reshape( np.array( map(lambda red:  map(lambda line: np.float64(line.split()), red) ,self.xred)),(self.Nbtime,self.n_image,self.natom,3) )
+      else:
+	  self.xred = None
 
       #Reading stress of particules:
       message = "Unable to read stress of particules"
-      if self.n_image==1:
-          temp = commands.getoutput(' grep -A 3  \"Cartesian components of stress\" '+ self.namefile2\
-                                    + '  | awk \'{print $3,$6 }\'| sed \'/^\s/d\' | sed \'/of/d\' ')
-      else:
-          temp = commands.getoutput(' grep -A 3  \"Cartesian components of stress\" '+ self.namefile2\
-                                    + '  | awk \'{print $4,$7 }\'| sed \'/^\s/d\' | sed \'/of/d\'| sed \'/Pressure/d\'')
+      index = filter(lambda i:  'Cartesian components of stress' in lines[i], np.arange(len(lines)))
 
-      self.temp = np.reshape(np.array(temp.split()[0:self.n_image*self.Nbtime*6],dtype=float),(self.Nbtime,self.n_image,6))
+      if index:
+	  self.stress = map(lambda ind: lines[ind+1:ind+1+3] ,index)
+          self.stress = np.array( map(lambda stress:  map(lambda line: np.array(line.split())[2::3], stress) ,self.stress))
+          self.stress = np.float64(np.reshape( self.stress[:self.Nbtime], (self.Nbtime,self.n_image,6) ))
+      else:
+	  self.stress = None
+ 
+      """
+      self.temp = self.stress.copy()
       s = (self.Nbtime,self.n_image,6)
       self.stress = np.zeros(s)
-      nb = len(temp) / 6
+      nb = len(self.temp) / 6
       ni = self.Nbtime - nb
       
       self.stress[ni:]    = self.temp    
@@ -206,31 +217,34 @@ class MolecularDynamicFile:
       self.stress[ni:,:,3]= self.temp[:,:,1]
       self.stress[ni:,:,4]= self.temp[:,:,3]
       del self.temp
-        
+     
+      print self.stress
+      """ 
+
       #Reading the type of particules:
       message = "Unable to read the type of particules"
-      temp = commands.getoutput('grep -A '+str(int(self.natom/20))+ '  \" typat \" '+self.namefile2+' |  sed \'s/typat//\'')
-      self.typat = np.array(temp.split(), dtype=int)
-
+      index = filter(lambda i:  ' typat ' in lines[i], np.arange(len(lines)))
+      self.typat = np.float64((' '.join(map(lambda ind: lines[ind:ind+1+int(self.natom/20)] ,index).pop())).split()[1:])
 
       #Reading mass of particules:
-      temp = commands.getoutput('grep -P -A' + str(int(max(self.typat))/3) +' \'amu\s(.*)\' '+self.namefile2+' | sed \'s/amu//\'')
-      self.amu = np.array(temp.split(), dtype=float)
+      message = "Unable to read the mass of particules"
+      index = filter(lambda i:  'amu' in lines[i], np.arange(len(lines)))
+      self.amu = np.float64(' '.join(map(lambda ind: lines[ind:ind+int(max(self.typat))] ,index).pop()).split()[1:])
 
       #Reading znucl :
       message = "Unable to read znucl"
-      temp = commands.getoutput('grep  \"znucl \" '+self.namefile2+' | sed \'s/znucl//\'')
-      self.znucl = np.array(temp.split(), dtype=float)
+      index = filter(lambda i:  'znucl' in lines[i], np.arange(len(lines)))
+      self.znucl = np.float64(map(lambda ind: lines[ind] ,index).pop().split()[1:])
 
       #Reading dtion:
       try:
           #try to read dtion :
-          temp = commands.getoutput('grep  \"dtion \" '+self.namefile2+' | awk \'{print $2}\'')
-          self.dtion = float(temp)
+          index = filter(lambda i:  'dtion' in lines[i], np.arange(len(lines)))
+          self.dtion = np.float64(map(lambda ind: lines[ind] ,index).pop().split()[1:])
       except:
           #If dtion doesn't exist, it's set to 100 (default value)
           self.dtion = 100
-            
+      
       self.goodFile = True
 
       #-----------Calculation of some quantities------------#
@@ -633,7 +647,7 @@ class MolecularDynamicFile:
       # return 2D array with the Stess (GPa)
       if self.goodFile:
           if self.n_image==1:
-              return self.stress[self.ni-1:self.nf-1,image-1] * 29421.033e0#Temporarily. put (nf) for finish slicing at 299,
+               return self.stress[self.ni-1:self.nf-1,image-1] * 29421.033e0#Temporarily. put (nf) for finish slicing at 299,
           else:                                                     #Skip the last step to get the same array size (see vel and pos).
                return self.stress[self.ni-1:self.nf-1,image-1] #In PIMD, stress is already give in GPA#
       else:   
@@ -644,9 +658,9 @@ class MolecularDynamicFile:
       if self.goodFile:
           acell = np.zeros(((self.nf-self.ni),image,3))
           for i in range(3):
-              acell[:,image-1,i]=np.sqrt(self.rprimd[self.ni:self.nf,image-1,i,0]**2+\
-                                         self.rprimd[self.ni:self.nf,image-1,i,1]**2+\
-                                         self.rprimd[self.ni:self.nf,image-1,i,2]**2)
+              acell[:,image-1,i]=np.sqrt(self.rprimd[image-1,self.ni:self.nf,i,0]**2+\
+                                         self.rprimd[image-1,self.ni:self.nf,i,1]**2+\
+                                         self.rprimd[image-1,self.ni:self.nf,i,2]**2)
           return acell[:,image-1,:] # Temporarily. (ni-1) for start slicing at 0
       else:
           return 0

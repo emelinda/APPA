@@ -6,7 +6,11 @@ Abinit Post Process Application
 author: Martin Alexandre
 last edited: April 2013
 """
-import sys,readline,os,commands,subprocess
+import sys
+import readline
+import os
+import commands
+import subprocess
 
 #Reading
 import reading.read as Read
@@ -38,7 +42,14 @@ import numpy as np
 readline.parse_and_bind("tab: complete")
 
 #Units array (in progress):
-units  = {'Pressure':['GPa',1],'Energy':["Ha",1],'Temperature':['K',0],'Volume':["Bohr^3",1],'Lengh':["Bohr",1],'Distance':["Angstrom",0.5291772085936]}
+units  = {
+          'Pressure':['GPa',1],
+             'Energy':["Ha",1],
+         'Temperature':['K',0],
+         'Volume':["Bohr^3",1],
+            'Lengh':["Bohr",1],
+        'Distance':["Angstrom",0.5291772085936]
+         }
 
 
 def displayData(data,deviation):
@@ -126,11 +137,10 @@ def showData(file,units):
     print 'Step: ' + str(file.getNbTime())
     print "initial step :  " + str(file.getNi())
     print "final   step :  " + str(file.getNf())                
-                               
-    E_tot = units['Energy'][1] *  np.mean(file.getE_Tot())
-    deviation = np.std(units['Energy'][1] * file.getE_Tot(), E_tot)
-    print 'Total Energy ('+ str(units['Energy'][0]) +"): " + displayData(E_tot,deviation)
         
+    E_tot = units['Energy'][1] *  np.mean(file.getE_Tot())
+    deviation = np.std(units['Energy'][1] * file.getE_Tot())
+    print 'Total Energy ('+ str(units['Energy'][0]) +"): " + displayData(E_tot,deviation)
         
     Vol = units['Volume'][1] * np.mean(file.getVol())
     deviation = np.std( file.getVol() * units['Volume'][1] )
